@@ -2,6 +2,27 @@
 
 #include "matrix.h"
 
+struct Vector2
+{
+	float x, y;
+	Vector2() { x = y = 0; }
+	Vector2(float a, float b)
+	{
+		x = a;
+		y = b;
+	}
+
+	float Dot(const Vector2 &v)const
+	{
+		return x * v.x + y * v.y;
+	}
+
+	Vector2 operator-(const Vector2 &v) const
+	{
+		return Vector2(x - v.x, y - v.y);
+	}
+};
+
 struct Vector3
 {
 	float x, y, z;
@@ -83,6 +104,11 @@ struct Vector3
 	{
 		float invlength = 1 / sqrtf(x * x + y * y + z * z);
 		return Vector3(x * invlength, y * invlength, z * invlength);
+	}
+
+	Vector2 ToVector2()
+	{
+		return Vector2(x, y);
 	}
 
 };

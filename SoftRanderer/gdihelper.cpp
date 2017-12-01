@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 #include "gdihelper.h"
+#include "spherecoord.h"
 
 bool g_bIsActive;
 int g_nClientWidth = 640;
@@ -25,6 +26,7 @@ Matrix4 g_VPMatrix3D;
 void InitFrame3D();
 Matrix4 GetViewMatrix();
 Matrix4 GetPorjectionMatrix(float fovDegree, float aspect, float nearz, float farz);
+bool IsPointInTriangle(Vector2 Triangel[3], Vector2 Point);
 
 void InitGDI(HWND hWnd)
 {
@@ -260,14 +262,48 @@ Matrix4 GetPorjectionMatrix(float fovDegree, float aspect, float nearz, float fa
 	return pMat;
 }
 
+bool IsPointInTriangle(Vector2 Triangle[3], Vector2 Point)
+{
+	Vector2 u = Triangle[1] - Triangle[0];
+	Vector2 v = Triangle[2] - Triangle[0];
+	Vector2 w = Point - Triangle[0];
+
+	float dotUU = u.Dot(u);
+	float dotUV = u.Dot(v);
+	float dotUW = u.Dot(w);
+	float dotVV = v.Dot(v);
+	float dotVW = v.Dot(w);
+
+	float invDenom = 1.0f / (dotUU * dotVV - dotUV * dotUV);
+	float s = (dotVV * dotUW - dotUV * dotVW) * invDenom;
+	float t = (dotUU * dotVW - dotUV * dotUW) * invDenom;
+
+	BYTE cPt1[3] = { 255, 0, 0 };
+	BYTE cPt2[3] = { 0, 255, 0 };
+	BYTE cPt3[3] = { 0, 0, 255 };
+
+	SetColor(
+		cPt1[0] * s + cPt2[0] * t + cPt3[0] * (1.0f - s - t),
+		cPt1[1] * s + cPt2[1] * t + cPt3[1] * (1.0f - s - t),
+		cPt1[2] * s + cPt2[2] * t + cPt3[2] * (1.0f - s - t)
+		);
+
+	return (s >= 0.0f) && (t >= 0.0f) && (s + t <= 1.0f);
+}
+
 void UpdateFrame3D(void)
 {
 	Clear(128, 128, 128);
 
 	static float fovDegree = 45.0f;
 
-	if (GetAsyncKeyState(VK_PRIOR))	fovDegree += 1.0f;
-	if (GetAsyncKeyState(VK_NEXT))	fovDegree -= 1.0f;
+	SphericalCoordinate sc(g_Cameara3D);
+	if (GetAsyncKeyState(VK_LEFT))		g_Cameara3D = sc.AddRotationYaw(-1.0f);
+	if (GetAsyncKeyState(VK_RIGHT))		g_Cameara3D = sc.AddRotationYaw(1.0f);
+	if (GetAsyncKeyState(VK_UP))			g_Cameara3D = sc.AddRotationPitch(1.0f);
+	if (GetAsyncKeyState(VK_DOWN))	g_Cameara3D = sc.AddRotationPitch(-1.0f);
+	if (GetAsyncKeyState(VK_PRIOR))		fovDegree += 1.0f;
+	if (GetAsyncKeyState(VK_NEXT))		fovDegree -= 1.0f;
 	
 	Matrix4 VMat = GetViewMatrix();
 	Matrix4 PMat = GetPorjectionMatrix(fovDegree, 0.75f, 128.0f, 10000.0f);
@@ -294,11 +330,46 @@ void UpdateFrame3D(void)
 	
 	Vector3 wPt1, wPt2, wPt3;
 	wPt1.Set(30, 0, 0);
-	wPt2.Set(0, 30, 0);
-	wPt3.Set(0, 0, 30);
-	SetLine3D(wPt1, wPt2);
+	wPt2.Set(0, 0, 30);
+	wPt3.Set(30, 0, 30);
+	
+	Vector2 sPt[3] = {
+		(wPt1 * g_VPMatrix3D).ToVector2(),
+		(wPt2 * g_VPMatrix3D).ToVector2() ,
+		(wPt3 * g_VPMatrix3D).ToVector2() };
+
+	Vector2 bbMin = Vector2( INFINITY,  INFINITY);
+	Vector2 bbMax = Vector2(-INFINITY, -INFINITY);
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (sPt[i].x < bbMin.x) bbMin.x = sPt[i].x;
+		if (sPt[i].y < bbMin.y) bbMin.y = sPt[i].y;
+		
+		if (sPt[i].x > bbMax.x) bbMax.x = sPt[i].x;
+		if (sPt[i].y > bbMax.y) bbMax.y = sPt[i].y;
+	}
+
+	int xMin = (int)floorf(bbMin.x);
+	int xMax = (int)floorf(bbMax.x);
+	int yMin = (int)floorf(bbMin.y);
+	int yMax = (int)floorf(bbMax.y);
+
+	for (int y = yMin; y < yMax; y++)
+	{
+		for (int x = xMin; x < xMax; x++)
+		{
+			if (IsPointInTriangle(sPt, Vector2((float)x, (float)y)))
+			{
+				SetPixelRaster(x,y);
+			}
+		}
+	}
+
+
+	/*SetLine3D(wPt1, wPt2);
 	SetLine3D(wPt1, wPt3);
-	SetLine3D(wPt3, wPt2);
+	SetLine3D(wPt3, wPt2);*/
 
 
 }
