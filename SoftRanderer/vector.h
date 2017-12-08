@@ -34,6 +34,21 @@ struct Vector3
 		z = c;
 	}
 
+	Vector3 operator+(Vector3 &v) const
+	{
+		return Vector3(x + v.x, y + v.y, z + v.z);
+	}
+
+	Vector3 operator*(float Scale) const
+	{
+		return Vector3(x * Scale, y * Scale, z * Scale);
+	}
+
+	Vector3 operator*(const Vector3& v) const
+	{
+		return Vector3(x * v.x, y * v.y, z * v.z);
+	}
+
 	Vector3 operator*(const Matrix3 &m) const
 	{
 		Vector3 temp;
@@ -109,6 +124,16 @@ struct Vector3
 	Vector2 ToVector2()
 	{
 		return Vector2(x, y);
+	}
+
+	float Dot(const Vector3 &v)const
+	{
+		return x * v.x + y * v.y + z * v.z;
+	}
+
+	static float Dot(const Vector3 &v1, const Vector3 &v2)
+	{
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
 };

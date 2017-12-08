@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "gdihelper.h"
 #include "spherecoord.h"
+#include "quaternion.h"
 
 bool g_bIsActive;
 int g_nClientWidth = 640;
@@ -332,6 +333,30 @@ void UpdateFrame3D(void)
 	wPt1.Set(30, 0, 0);
 	wPt2.Set(0, 0, 30);
 	wPt3.Set(30, 0, 30);
+
+	// Rotation을 적용해서 Orientation을 변경
+	Vector3 wR;
+	Vector3 wR1 = Vector3(90, 0, 90);
+	Vector3 wR2 = Vector3(0, 0, 0);
+
+	static float g_Angle = 0.0f;
+	g_Angle += 1.0f;
+	float biasedSine = (sinf(Deg2Rad(g_Angle)) + 1.0f) * 0.5f;
+	//wR = wR1 + (wR2 - wR1) * biasedSine;
+
+	Quaternion q1 = Quaternion(wR1);
+	Quaternion q2 = Quaternion(wR2);
+	wR = Quaternion::Lerp(q1, q2, biasedSine).ToEulerDegree();
+
+	Matrix4 mRx, mRy, mRz, mR;
+	mRx.SetRotationX(wR.x);
+	mRy.SetRotationY(wR.y);
+	mRz.SetRotationZ(wR.z);
+	mR = mRx * mRy * mRz;
+	wPt1 = wPt1 * mR;
+	wPt2 = wPt2 * mR;
+	wPt3 = wPt3 * mR;
+
 	
 	Vector2 sPt[3] = {
 		(wPt1 * g_VPMatrix3D).ToVector2(),

@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClInclude Include="gdihelper.h" />
     <ClInclude Include="matrix.h" />
+    <ClInclude Include="quaternion.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SoftRanderer.h" />
     <ClInclude Include="spherecoord.h" />
